@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Intermediate Trainer</title>
+<meta name="theme-color" content="#14110d">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<style>
+  :root { --bg:#14110d; --panel:#1e1a14; --line:#3a3127; --text:#f3eadb; --muted:#a89a85; --amber:#ffb02e; }
+  @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) { --bg:#f6f0e4; --panel:#fffaf0; --line:#ddd0b8; --text:#231c12; --muted:#6f6250; --amber:#c27300; } }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100vh; display:grid; place-items:center; background:var(--bg); color:var(--text); font:17px/1.5 system-ui, sans-serif; padding:16px; }
+  form { width:100%; max-width:360px; background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:24px; }
+  h1 { font:600 20px ui-monospace, monospace; margin:0 0 4px; } h1 b { color:var(--amber); }
+  p { color:var(--muted); margin:0 0 18px; font-size:15px; }
+  input { width:100%; font:inherit; padding:12px; border-radius:10px; border:1px solid var(--line); background:var(--bg); color:var(--text); }
+  button { width:100%; margin-top:12px; padding:13px; border:0; border-radius:12px; background:var(--amber); color:#1a1206; font:600 17px system-ui; }
+  .err { color:#ff6b5b; display:none; } .err.on { display:block; }
+</style>
+</head>
+<body>
+<form method="post" action="/api/login">
+  <h1>Intermediate<b> Trainer</b></h1>
+  <p>Private study app. Enter your password.</p>
+  <p class="err" id="err">That password didn't work.</p>
+  <input type="password" name="password" autocomplete="current-password" autofocus required aria-label="Password">
+  <button type="submit">Open</button>
+</form>
+<script>if (location.search.includes("e=1")) document.getElementById("err").classList.add("on");</script>
+</body>
+</html>
