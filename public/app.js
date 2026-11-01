@@ -11,9 +11,18 @@
   const SESSION_SIZE = 15;
 
   /* ── STATE ── */
-  const LS = "rsgb-int-v1";
+  // Each person keeps their own copy on the device, so a shared phone or iPad never mixes progress.
+  const USER = (document.cookie.match(/(?:^|;\s*)ru=([^;]+)/) || [])[1] || "me";
+  const LS = "rsgb-int-v1:" + USER;
   const blank = () => ({ v: 1, items: {}, days: {}, notes: {}, mocks: [], lessons: {}, settings: { target: "2027-01-05", newPerDay: 8, rate: 1 }, u: 0 });
   let S;
+  try {
+    // Andy's progress from before usernames was saved without a name: adopt it once.
+    if (USER === "andy" && !localStorage.getItem(LS) && localStorage.getItem("rsgb-int-v1")) {
+      localStorage.setItem(LS, localStorage.getItem("rsgb-int-v1"));
+    }
+    localStorage.removeItem("rsgb-int-v1");
+  } catch {}
   try { S = Object.assign(blank(), JSON.parse(localStorage.getItem(LS) || "{}")); } catch { S = blank(); }
 
   function merge(a, b) {
@@ -44,9 +53,10 @@
     setSync("syncing…");
     try {
       const r = await fetch("/api/progress", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(S), credentials: "same-origin" });
-      if (r.status === 401) { location.href = "/login.html"; return; }
+      if (r.status === 401) { location.href = "/login.html"; return false; }
       setSync(r.ok ? "synced" : "offline");
-    } catch { setSync("offline"); }
+      return r.ok;
+    } catch { setSync("offline"); return false; }
   }
   async function pull() {
     try {
@@ -376,8 +386,8 @@
         <label class="field">Speech speed<input type="range" min="0.7" max="1.3" step="0.05" id="st-rate" value="${S.settings.rate}"></label>
         <button class="go alt" data-act="test-voice">Test voice</button>
         <button class="go" data-act="save-settings">Save</button>
-        <p class="small">Progress syncs between your phone and Mac. ${Object.keys(S.items).length} of ${ALL_KEYS.length} cards started.</p>
-        <p class="small"><a href="/api/logout">Log out</a></p>
+        <p class="small">Signed in as <b>${esc(USER)}</b>. Progress syncs between your devices. ${Object.keys(S.items).length} of ${ALL_KEYS.length} cards started.</p>
+        <button class="go alt" data-act="logout">Log out</button>
       </article>`;
   }
 
@@ -412,6 +422,18 @@
     if (a === "listen-start") {
       if (ctx.on) { ctx.on = false; clearTimeout(ctx.wait); hush(); return render(); }
       ctx.on = true; render(); return listenLoop();
+    }
+    if (a === "logout") {
+      // Send any unsynced answers first, then remove this person's copy from the device.
+      b.disabled = true; b.textContent = "Logging out…";
+      clearTimeout(syncTimer);
+      return (async () => {
+        // Only remove the device copy once it's safely on the server; if offline, it waits here for next time.
+        let synced = false;
+        try { synced = await push(); } catch {}
+        if (synced) try { localStorage.removeItem(LS); } catch {}
+        location.href = "/api/logout";
+      })();
     }
     if (a === "test-voice") { S.settings.rate = +$("#st-rate").value; hush(); return speak("Q R T means stop transmitting. Three dB doubles the power."); }
     if (a === "save-settings") {

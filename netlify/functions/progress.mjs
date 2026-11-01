@@ -1,9 +1,7 @@
-// Stores study progress in Netlify Blobs so phone and Mac stay in step.
+// Stores each person's study progress in Netlify Blobs, keyed by username,
+// so their phone and computer stay in step.
 import { getStore } from "@netlify/blobs";
-import { createHash } from "node:crypto";
-
-const tokenFor = pw => createHash("sha256").update(pw + "::rsgb-int-v1").digest("hex");
-const cookie = (req, name) => (req.headers.get("cookie") || "").split(/;\s*/).map(c => c.split("=")).find(([k]) => k === name)?.[1];
+import { readSession } from "../lib/session.js";
 
 function merge(a = {}, b = {}) {
   const out = { v: 1, items: {}, days: {}, notes: {}, mocks: [], lessons: {}, settings: {}, u: Math.max(a.u || 0, b.u || 0) };
@@ -20,16 +18,17 @@ function merge(a = {}, b = {}) {
 }
 
 export default async req => {
-  const pw = process.env.SITE_PASSWORD;
-  if (!pw || cookie(req, "rt") !== tokenFor(pw)) return Response.json({ error: "login" }, { status: 401 });
+  const secret = process.env.SITE_PASSWORD;
+  const user = secret && await readSession(req, secret);
+  if (!user) return Response.json({ error: "login" }, { status: 401 });
   const store = getStore({ name: "progress", consistency: "strong" });
-  const current = (await store.get("andy", { type: "json" })) || {};
+  const current = (await store.get(user, { type: "json" })) || {};
   if (req.method === "GET") return Response.json(current, { headers: { "cache-control": "no-store" } });
   if (req.method === "PUT") {
     const text = await req.text();
     if (text.length > 2_000_000) return Response.json({ error: "too big" }, { status: 413 });
     const merged = merge(current, JSON.parse(text));
-    await store.setJSON("andy", merged);
+    await store.setJSON(user, merged);
     return Response.json({ ok: true, u: merged.u });
   }
   return new Response("Method not allowed", { status: 405 });

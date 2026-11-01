@@ -15,6 +15,9 @@
   form { width:100%; max-width:360px; background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:24px; }
   h1 { font:600 20px ui-monospace, monospace; margin:0 0 4px; } h1 b { color:var(--amber); }
   p { color:var(--muted); margin:0 0 18px; font-size:15px; }
+  label { display:block; font-size:14px; color:var(--muted); margin:12px 0 4px; }
+  a { color:var(--amber); }
+  .alt { margin:16px 0 0; text-align:center; }
   input { width:100%; font:inherit; padding:12px; border-radius:10px; border:1px solid var(--line); background:var(--bg); color:var(--text); }
   button { width:100%; margin-top:12px; padding:13px; border:0; border-radius:12px; background:var(--amber); color:#1a1206; font:600 17px system-ui; }
   .err { color:#ff6b5b; display:none; } .err.on { display:block; }
@@ -23,11 +26,19 @@
 <body>
 <form method="post" action="/api/login">
   <h1>Intermediate<b> Trainer</b></h1>
-  <p>Private study app. Enter your password.</p>
-  <p class="err" id="err">That password didn't work.</p>
-  <input type="password" name="password" autocomplete="current-password" autofocus required aria-label="Password">
-  <button type="submit">Open</button>
+  <p>Private study app for the RSGB Intermediate exam. Log in with your own username.</p>
+  <p class="err" id="err">That username and password didn't match.</p>
+  <label for="username">Username</label>
+  <input id="username" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" autofocus required>
+  <label for="password">Password</label>
+  <input id="password" type="password" name="password" autocomplete="current-password" required>
+  <button type="submit">Log in</button>
+  <p class="alt">New here? <a href="/signup.html">Create an account</a></p>
 </form>
-<script>if (location.search.includes("e=1")) document.getElementById("err").classList.add("on");</script>
+<script>
+  const q = new URLSearchParams(location.search);
+  if (q.get("e")) document.getElementById("err").classList.add("on");
+  if (q.get("u")) { document.getElementById("username").value = q.get("u"); document.getElementById("password").focus(); }
+</script>
 </body>
 </html>
