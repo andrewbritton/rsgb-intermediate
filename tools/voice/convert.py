@@ -157,6 +157,8 @@ def _prefixes(t):
     t = re.sub(rf"\bprefix ({keys})\b", lambda m: "prefix " + PREFIX_SAY[m.group(1)], t)
     t = re.sub(rf"^\s*({keys}):", lambda m: " " + PREFIX_SAY[m.group(1)] + ":", t)
     t = re.sub(r"^\s*W \(also K, N, AA–AL\)", " double you, also K, N, eh eh to, eh L,", t)
+    t = re.sub(r"\buses W\b", "uses double you", t)
+    t = re.sub(r"\bAA to AL\b", "eh eh to eh L", t)
     if t.strip() in PREFIX_SAY and t.strip() not in ("F", "G"):
         t = " " + PREFIX_SAY[t.strip()] + " "
     return t
