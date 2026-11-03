@@ -157,12 +157,13 @@
   player.preload = "auto";
   let playId = 0;
   // Plays a list of parts in order: { key, text } uses the clip if there is a current one, else the phone voice.
+  // `source` is the app text the clip was made from, when that differs from what the phone voice would read.
   function say(parts, onend) {
     const id = ++playId;
     const next = i => {
       if (id !== playId) return;
       if (i >= parts.length) return onend && onend();
-      const p = parts[i], src = p.key && clip(p.key, p.check === false ? null : p.text);
+      const p = parts[i], src = p.key && clip(p.key, p.check === false ? null : (p.source ?? p.text));
       const go = () => setTimeout(() => next(i + 1), p.gap ?? 120);
       if (src) {
         player.src = src;
@@ -177,12 +178,12 @@
   }
   // The parts for an option shown with letter L: short answers have the letter baked in.
   const optionParts = (it, o, L) => it.id && clip(`Q:${it.id}:o${o.n}:${L}`, o.t)
-    ? [{ key: `Q:${it.id}:o${o.n}:${L}`, text: L + ": " + o.t }]
+    ? [{ key: `Q:${it.id}:o${o.n}:${L}`, source: o.t, text: L + ": " + o.t }]
     : [{ key: `opt:${L}`, check: false, text: L + ":", gap: 150 }, { key: it.id && `Q:${it.id}:o${o.n}`, text: o.t }];
   const questionParts = it => [{ key: it.id && `Q:${it.id}:q`, text: it.q, gap: 350 },
     ...it.order.flatMap((o, i) => [...optionParts(it, o, "ABCD"[i]).slice(0, -1), { ...optionParts(it, o, "ABCD"[i]).slice(-1)[0], gap: 300 }])];
   const explainParts = it => [{ key: it.id && `Q:${it.id}:x`, text: it.x, gap: 450 },
-    ...(it.hook ? [{ key: `Q:${it.id}:h`, text: "Memory hook: " + it.hook }] : [])];
+    ...(it.hook ? [{ key: `Q:${it.id}:h`, source: it.hook, text: "Memory hook: " + it.hook }] : [])];
   const hush = () => { playId++; player.pause(); if ("speechSynthesis" in window) speechSynthesis.cancel(); };
 
   /* ── VIEWS ── */
@@ -411,7 +412,7 @@
     const el = $("#nowq"); if (el) el.innerHTML = `<p class="q">${esc(it.q)}</p>`;
     // Short right answers have their own "The answer is Option B, …" clip; longer ones are joined from two.
     const answer = it.id && clip(`Q:${it.id}:a:${letter}`, it.opts[0])
-      ? [{ key: `Q:${it.id}:a:${letter}`, text: `The answer is ${letter}: ${it.opts[0]}`, gap: 450 }]
+      ? [{ key: `Q:${it.id}:a:${letter}`, source: it.opts[0], text: `The answer is ${letter}: ${it.opts[0]}`, gap: 450 }]
       : [{ key: `ans:${letter}`, check: false, text: `The answer is ${letter}:`, gap: 150 }, { key: it.id && `Q:${it.id}:o0`, text: it.opts[0], gap: 450 }];
     say(questionParts(it), () => {
       ctx.wait = setTimeout(() => say([...answer, ...explainParts(it)], () => { ctx.wait = setTimeout(listenLoop, 2500); }), 6000);
