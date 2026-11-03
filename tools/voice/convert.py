@@ -12,6 +12,8 @@ KM = "[[ kˈɪləmiːtəz ]]"            # 19 KILLA-metres
 DBD = "[[ diːbiː ]] [[ dˈiː ]]"     # 18 dee-bee DEE
 RECORD = "[[ ɹɛkˈɔːd ]]"            # 46 rec-ORD
 RATHER = "[[ ɹˌɑːðə ]]"             # 68 light 'rather'
+KOHM, KOHMS = "[[ kˈɪlə əʊm ]]", "[[ kˈɪlə əʊmz ]]"   # killa-ohm(s), stress on killa (no linking 'r')
+HOOK = "Memory hook: |"             # pause after 'Memory hook:'
 
 # ── Units: (singular, plural). Before a noun the singular is used ("a 3 amp fuse"), items 1-3, 8, 10, 20.
 UNITS = {
@@ -20,7 +22,7 @@ UNITS = {
     "kV": ("kilovolts", "kilovolts"), "mV": ("milli-volts", "milli-volts"),
     "A": ("amp", "amps"), "mA": ("milli-amp", "milli-amps"), "µA": ("micro-amp", "micro-amps"),
     "Ah": ("amp hour", "amp hours"),
-    "Ω": ("ohm", "ohms"), "kΩ": ("kilohm", "kilohms"), "MΩ": ("megohm", "megohms"),
+    "Ω": ("ohm", "ohms"), "kΩ": (KOHM, KOHMS), "MΩ": ("megohm", "megohms"),
     "F": ("farad", "farads"), "µF": ("micro-farad", "micro-farads"), "nF": ("nano-farad", "nano-farads"),
     "pF": ("pico-farad", "pico-farads"),
     "H": ("henry", "henries"), "mH": ("milli-henry", "milli-henries"), "µH": ("micro-henry", "micro-henries"),
@@ -180,7 +182,9 @@ def spoken(text):
     t = re.sub(r"\bwith β = (\d+)", r"with a beta of \1", t)
     t = re.sub(r"Greek letter µ", "Greek letter mu", t)
     t = re.sub(r"\b[Kk]ilometres\b", KM, t)                                          # 19: stress on killa
-    t = re.sub(r"\b[Kk]ilohertz\b", KHZ, t)                                          # 12
+    t = re.sub(r"\b[Kk]ilohertz\b", KHZ, t)
+    t = re.sub(r"\b[Kk]ilohms\b", KOHMS, t)
+    t = re.sub(r"\b[Kk]ilohm\b", KOHM, t)                                          # 12
     t = re.sub(r"\bUSB above \(60 m is the exception, using USB\)", "USB above 60 m is the exception, using USB", t)  # 72
     t = re.sub(r"(\d) APRS\b", r"\1, ^ APRS", t)                                     # 82
     t = re.sub(r"\bPA is the prefix\b", "P eh is the prefix", t)
@@ -257,6 +261,10 @@ def spoken(text):
     t = re.sub(r"\s{2,}", " ", t).strip()
     t = re.sub(r"^,\s*", "", t)
     return t
+
+
+def hook(text):
+    return f"{HOOK} {spoken(text)}"
 
 
 def stem(text):
