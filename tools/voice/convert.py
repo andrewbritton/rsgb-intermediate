@@ -276,4 +276,6 @@ def stem(text):
 def option(letter, text):
     """Every option starts 'Option A, ^' (item 13 / PSK test)."""
     body = spoken(text).rstrip(".")
-    return f"Option {letter}, ^ {body}."
+    # A one- or two-word answer ("V K") garbles after a fixed pause, so it gets a comma instead.
+    pause = ", ^" if len(re.sub(r"\[\[.*?\]\]", "x", body).split()) > 2 else ","
+    return f"Option {letter}{pause} {body}."
