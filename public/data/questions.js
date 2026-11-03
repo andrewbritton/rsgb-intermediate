@@ -197,7 +197,7 @@ Q("6E3", "The most serious problem with an indoor antenna near mains wiring is",
 Q("6F3", "On a car, which mobile antenna position usually gives the lowest RF field inside the vehicle?", ["Centre of the roof", "Boot lid", "Wing", "Inside the windscreen"], "The metal roof screens the occupants. Wing and boot mounts give higher exposure.");
 
 /* ───────────── SECTION 7 · OPERATING ───────────── */
-Q("7A3", "Which is a prefix for the USA?", ["W", "VE", "I", "VK"], "W (also K, N, AA–AL). VE is Canada, VK Australia, I Italy.");
+Q("7A3", "Which is a prefix for the USA?", ["W", "VE", "I", "VK"], "The USA uses W, and also K, N, and AA to AL. VE is Canada, VK Australia, I Italy.");
 Q("7A3", "The prefix VK belongs to", ["Australia", "Canada", "New Zealand", "Japan"], "VK Australia, ZL New Zealand, JA Japan, VE Canada.", "VK: Very Kangaroo.");
 Q("7A3", "PA is the prefix for", ["the Netherlands", "Portugal", "Panama", "Poland"], "Also EI Ireland, F France.");
 Q("7A4", "Contests generally require", ["correct exchange of specified information", "RSGB membership", "QSL cards for all contacts", "operation from remote sites"], "Typically report plus serial number or locator.");

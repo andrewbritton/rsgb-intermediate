@@ -152,7 +152,36 @@
   const fnv = s => { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return h.toString(16).padStart(8, "0"); };
   let clips = null;
   fetch("/audio/manifest.json", { credentials: "same-origin" }).then(r => r.ok ? r.json() : null).then(m => { clips = m; }).catch(() => {});
-  const clip = (key, text) => { const c = clips && clips[key]; return c && (text == null || c.h === fnv(String(text))) ? "/audio/" + c.f : null; };
+  const clipUrl = c => "/audio/" + c.f + "?v=" + c.s;
+  const clip = (key, text) => { const c = clips && clips[key]; return c && (text == null || c.h === fnv(String(text))) ? clipUrl(c) : null; };
+  // Settings → "Save audio for offline": copies every clip into the cache the service worker plays from.
+  const AUDIO_CACHE = "int-audio-v1";
+  async function offlineStatus() {
+    if (!clips || !("caches" in window)) return null;
+    const have = new Set((await (await caches.open(AUDIO_CACHE)).keys()).map(r => r.url));
+    const urls = Object.values(clips).map(c => new URL(clipUrl(c), location.href).href);
+    return { saved: urls.filter(u => have.has(u)).length, total: urls.length };
+  }
+  async function saveOffline(progress) {
+    const cache = await caches.open(AUDIO_CACHE);
+    const urls = Object.values(clips).map(c => new URL(clipUrl(c), location.href).href);
+    const want = new Set(urls);
+    for (const r of await cache.keys()) if (!want.has(r.url)) await cache.delete(r);   // clips that have been rebuilt
+    const have = new Set((await cache.keys()).map(r => r.url));
+    const todo = urls.filter(u => !have.has(u));
+    let done = urls.length - todo.length, failed = 0;
+    progress(done, urls.length);
+    const worker = async () => {
+      while (todo.length) {
+        const u = todo.pop();
+        try { const r = await fetch(u, { credentials: "same-origin" }); if (r.status === 200) await cache.put(u, r); else failed++; } catch { failed++; }
+        progress(++done, urls.length);
+      }
+    };
+    await Promise.all(Array.from({ length: 6 }, worker));
+    try { await navigator.storage?.persist?.(); } catch {}
+    return failed;
+  }
   const player = new Audio();
   player.preload = "auto";
   let playId = 0;
@@ -427,10 +456,16 @@
         <label class="field">New cards per day<input type="number" min="2" max="30" id="st-new" value="${S.settings.newPerDay}"></label>
         <label class="field">Speech speed<input type="range" min="0.7" max="1.3" step="0.05" id="st-rate" value="${S.settings.rate}"></label>
         <button class="go alt" data-act="test-voice">Test voice</button>
+        <div class="field">Offline audio<span class="small" id="offline-status">Checking…</span></div>
+        <button class="go alt" data-act="save-offline" id="save-offline">Save audio for offline (about 45 MB)</button>
         <button class="go" data-act="save-settings">Save</button>
         <p class="small">Signed in as <b>${esc(USER)}</b>. Progress syncs between your devices. ${Object.keys(S.items).length} of ${ALL_KEYS.length} cards started.</p>
         <button class="go alt" data-act="logout">Log out</button>
       </article>`;
+    offlineStatus().then(o => {
+      const st = $("#offline-status"); if (!st) return;
+      st.textContent = !o ? "Not available on this device." : o.saved === o.total ? "All clips saved. Cori works with no signal." : o.saved ? `${o.saved} of ${o.total} clips saved. Tap Save to finish.` : "Not saved yet. Without signal, the phone voice is used.";
+    });
   }
 
   /* ── EVENTS ── */
@@ -476,6 +511,15 @@
         if (synced) try { localStorage.removeItem(LS); } catch {}
         location.href = "/api/logout";
       })();
+    }
+    if (a === "save-offline") {
+      if (!clips) return;
+      b.disabled = true;
+      const st = $("#offline-status");
+      return saveOffline((d, t) => { if (st) st.textContent = `Saving… ${d} of ${t} clips`; }).then(failed => {
+        b.disabled = false;
+        if (st) st.textContent = failed ? `${failed} clips couldn't be saved. Check your connection and tap Save again.` : "All clips saved. Cori works with no signal.";
+      });
     }
     if (a === "test-voice") { S.settings.rate = +$("#st-rate").value; hush(); return speak("Q R T means stop transmitting. Three dB doubles the power."); }
     if (a === "save-settings") {
