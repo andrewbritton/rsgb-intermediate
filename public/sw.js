@@ -36,8 +36,12 @@ self.addEventListener("fetch", e => {
       if (res.status === 200 && !res.redirected) (await caches.open(CACHE)).put(req, res.clone()).catch(() => {});
       return res;
     } catch {
-      const hit = await caches.match(req, { ignoreSearch: true });
-      return hit || caches.match("/index.html") || Response.error();
+      // Offline. ignoreVary: Safari otherwise refuses copies whose headers vary (e.g. by cookie).
+      const opts = { ignoreSearch: true, ignoreVary: true };
+      const hit = await caches.match(req, opts);
+      if (hit) return hit;
+      if (req.mode === "navigate") return (await caches.match("/", opts)) || (await caches.match("/index.html", opts)) || Response.error();
+      return Response.error();
     }
   })());
 });

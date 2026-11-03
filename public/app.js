@@ -179,6 +179,7 @@
       }
     };
     await Promise.all(Array.from({ length: 6 }, worker));
+    await cacheShell().catch(() => {});
     try { await navigator.storage?.persist?.(); } catch {}
     return failed;
   }
@@ -464,7 +465,7 @@
       </article>`;
     offlineStatus().then(o => {
       const st = $("#offline-status"); if (!st) return;
-      st.textContent = !o ? "Not available on this device." : o.saved === o.total ? "All clips saved. Cori works with no signal." : o.saved ? `${o.saved} of ${o.total} clips saved. Tap Save to finish.` : "Not saved yet. Without signal, the phone voice is used.";
+      st.textContent = !o ? "Not available on this device." : o.saved === o.total ? "All clips saved. The app and Cori work with no signal." : o.saved ? `${o.saved} of ${o.total} clips saved. Tap Save to finish.` : "Not saved yet. Without signal, the phone voice is used.";
     });
   }
 
@@ -518,7 +519,7 @@
       const st = $("#offline-status");
       return saveOffline((d, t) => { if (st) st.textContent = `Saving… ${d} of ${t} clips`; }).then(failed => {
         b.disabled = false;
-        if (st) st.textContent = failed ? `${failed} clips couldn't be saved. Check your connection and tap Save again.` : "All clips saved. Cori works with no signal.";
+        if (st) st.textContent = failed ? `${failed} clips couldn't be saved. Check your connection and tap Save again.` : "All clips saved. The app and Cori work with no signal.";
       });
     }
     if (a === "test-voice") { S.settings.rate = +$("#st-rate").value; hush(); return speak("Q R T means stop transmitting. Three dB doubles the power."); }
@@ -537,6 +538,18 @@
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") pull(); });
 
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
+  // Keep a copy of the whole app so it opens with no signal. Pages reached through the login
+  // redirect aren't stored by the service worker, so the app files are fetched directly here.
+  const SHELL = ["/", "/index.html", "/app.js", "/style.css", "/data/sections.js", "/data/questions.js", "/data/generators.js",
+    "/data/lessons.js", "/data/ex308.js", "/manifest.webmanifest", "/icon.svg", "/icon-180.png", "/icon-192.png", "/audio/manifest.json"];
+  async function cacheShell() {
+    if (!("caches" in window) || !navigator.onLine) return;
+    const cache = await caches.open("int-trainer-v1");
+    await Promise.all(SHELL.map(async u => {
+      try { const r = await fetch(u, { credentials: "same-origin", cache: "no-cache" }); if (r.status === 200 && !r.redirected) await cache.put(u, r); } catch {}
+    }));
+  }
+  setTimeout(() => cacheShell().catch(() => {}), 3000);
   // deep link from the reminder: /?start=daily
   if (new URLSearchParams(location.search).get("start") === "daily") { render(); setTimeout(() => app.querySelector('[data-act="daily"]')?.click(), 50); }
   else render();
