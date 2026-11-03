@@ -9,7 +9,9 @@ self.addEventListener("fetch", e => {
     try {
       const res = await fetch(req);
       // never cache login redirects
-      if (res.ok && !res.redirected) (await caches.open(CACHE)).put(req, res.clone());
+      // Only whole files are cached: audio arrives in parts (206) and is not stored, so
+      // offline the app falls back to the phone voice.
+      if (res.status === 200 && !res.redirected) (await caches.open(CACHE)).put(req, res.clone()).catch(() => {});
       return res;
     } catch {
       const hit = await caches.match(req, { ignoreSearch: true });
