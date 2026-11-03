@@ -201,8 +201,16 @@ def spoken(text):
     t = re.sub(r"\bSO239\b", "S O 2 3 9", t)                                      # 117
     t = re.sub(r"(?<=[A-Za-z0-9 ])/(?=[A-Za-z0-9])", " and ", t)                   # 29
 
-    # Ranges: '430–432' -> '430 to, 432' (14, 15, 28)
-    t = re.sub(r"(\d[\d.,]*)\s?[–-]\s?(\d)", r"\1 to, \2", t)
+    # 'to' next to a number can sound like 'two' (Andy, stage 1), so ranges and similar
+    # phrases are reworded: '430–432 MHz' -> 'between 430 and 432 MHz'.
+    t = re.sub(r"\bThe (\d[\d.]*)–(\d[\d.]*) MHz segment", r"The segment between \1 and \2 MHz", t)
+    t = re.sub(r"(\d[\d.,]*)\s?[–-]\s?(\d[\d.,]*)", r"between \1 and \2", t)
+    t = re.sub(r"\bon between\b", "on the band between", t)
+    t = re.sub(r"(^\s*|[.!?]\s+)between\b", r"\1The band between", t)
+    t = re.sub(r"\bis limited to (?=\d)", "has a limit of ", t)
+    t = re.sub(r"\bfalls to zero\b", "falls away to nothing", t)
+    t = re.sub(r"\branges from ([\w ]+?) to (?=\d)", r"ranges between \1 and ", t)
+    t = re.sub(r"\bconvert ([\w Ω]+?) to (?=\d)", r"convert \1 into ", t)
 
     # Numbers with units, then any numbers left over that need special reading
     t = _units(t)
