@@ -145,7 +145,7 @@ def _callsign(m):
     return " ".join("eh" if ch == "A" else ch for ch in m.group(0))
 
 
-PREFIX_SAY = {"EI": "E eye", "F": "F", "I": "eye", "JA": "J eh", "PA": "P eh", "VE": "vee ee", "VK": "V K",
+PREFIX_SAY = {"EI": "E eye", "F": "F", "I": "eye", "JA": "J eh", "PA": "P eh", "VE": "vee ee", "VK": "vee kay",
               "W": "double you", "ZL": "Z L", "G": "G", "GM": "G M", "GW": "G W"}
 COUNTRIES = "Ireland|France|Italy|Japan|Netherlands|Canada|Australia|USA|New Zealand|Scotland|Wales|England"
 
@@ -275,6 +275,9 @@ def stem(text):
 
 def option(letter, text):
     """Every option starts 'Option A, ^' (item 13 / PSK test)."""
+    if str(text).strip() in PREFIX_SAY and str(text).strip() not in ("F", "G"):
+        # A prefix on its own garbles after 'Option X,' ("V" especially): 'Option B, the prefix vee ee.'
+        return f"Option {letter}, the prefix {PREFIX_SAY[str(text).strip()]}."
     body = spoken(text).rstrip(".")
     # A one- or two-word answer ("V K") garbles after a fixed pause, so it gets a comma instead.
     pause = ", ^" if len(re.sub(r"\[\[.*?\]\]", "x", body).split()) > 2 else ","
