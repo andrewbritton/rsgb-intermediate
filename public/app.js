@@ -77,6 +77,8 @@
   const X_KEYS = Object.keys(EX308_DRILLS).map(k => "x:" + k);
   const ALL_KEYS = [...QUESTIONS.map(q => q.id), ...GEN_KEYS, ...X_KEYS];
   const secOf = k => k.startsWith("g:") ? GENERATORS[k.slice(2)].sec : k.startsWith("x:") ? 1 : QBY[k].sec;
+  const codeOf = k => k.startsWith("g:") ? GENERATORS[k.slice(2)].code : k.startsWith("x:") ? "1H1" : QBY[k].code;
+  const chOf = k => manualChapter(codeOf(k));
 
   function build(key) {
     if (key.startsWith("g:")) { const g = GENERATORS[key.slice(2)]; const o = g.make(); return Object.assign(o, { key, sec: g.sec, code: g.code, calc: true, title: g.name }); }
@@ -275,7 +277,7 @@
       <div class="crumb"><button class="link" data-go="home">✕</button><span>${esc(ctx.label)}</span><span>${ctx.total ? `${ctx.right}/${ctx.total} · ` : ""}${left} left</span></div>
       <div class="progress"><span style="width:${100 * ctx.total / (ctx.total + left)}%"></span></div>
       <article class="card">
-        <div class="tag">${sec.n}. ${esc(sec.name)} · ${esc(it.code)}${it.calc ? " · calc" : ""}${it.booklet ? " · use EX308" : ""}</div>
+        <div class="tag">${sec.n}. ${esc(sec.name)} · ${esc(it.code)}${it.calc ? " · calc" : ""}${it.booklet ? " · use EX308" : ""}${manualChapter(it.code) ? ` · 📖 Ch ${manualChapter(it.code)}` : ""}</div>
         <p class="q">${esc(it.q)}</p>
         <button class="say" data-act="sayq" aria-label="Read question aloud">🔊</button>
         <div class="opts">${it.order.map((o, i) => `<button class="opt ${ctx.answered != null ? (o.ok ? "right" : i === ctx.answered ? "wrong" : "dim") : ""}" data-act="ans" data-i="${i}" ${ctx.answered != null ? "disabled" : ""}><b>${"ABCD"[i]}</b>${esc(o.t)}</button>`).join("")}</div>
@@ -283,6 +285,7 @@
           <div class="explain ${it.order[ctx.answered].ok ? "good" : "bad"}">
             <strong>${it.order[ctx.answered].ok ? pickPraise() : "Not quite."}</strong> ${esc(it.x)}
             ${it.hook ? `<p class="hook">💡 ${esc(it.hook)}</p>` : ""}
+            ${!it.order[ctx.answered].ok && manualChapter(it.code) ? `<p class="manual">📖 Read up: Manual chapter ${manualChapter(it.code)}, ${esc(MANUAL[manualChapter(it.code)])}</p>` : ""}
             <button class="say" data-act="sayx" aria-label="Read explanation aloud">🔊</button>
           </div>
           ${QBY[it.key] ? `<details class="note"${S.notes[it.key] ? " open" : ""}><summary>My notes${S.notes[it.key] ? "" : " (add a note or manual page)"}</summary><textarea data-note="${it.key}" rows="2" placeholder="e.g. Manual p.42, or your own memory trick">${esc((S.notes[it.key] || {}).t || "")}</textarea></details>` : ""}
@@ -354,7 +357,18 @@
   function sections() {
     app.innerHTML = `
       <div class="crumb"><button class="link" data-go="home">‹ Home</button><span>Drill a section</span><span></span></div>
-      <div class="list">${SECTIONS.map(s => `<button class="row" data-act="drill" data-sec="${s.n}"><span class="num">${s.n}</span><span>${esc(s.name)}<small>${s.weight} Qs in the exam · ${readiness(s.n)}% ready</small><small class="blurb">${esc(s.blurb)}</small></span></button>`).join("")}</div>`;
+      <div class="list">${SECTIONS.map(s => `<button class="row" data-act="drill" data-sec="${s.n}"><span class="num">${s.n}</span><span>${esc(s.name)}<small>${s.weight} Qs in the exam · ${readiness(s.n)}% ready</small><small class="blurb">${esc(s.blurb)}</small></span></button>`).join("")}</div>
+      <h2>Or follow the manual</h2>
+      <p class="intro">Read a chapter of the Intermediate Licence Manual, then drill just its questions.</p>
+      <div class="list">${Object.entries(MANUAL).map(([n, t]) => { const keys = ALL_KEYS.filter(k => chOf(k) === +n); const p = keys.length ? Math.round(100 * keys.reduce((s, k) => s + Math.min(4, (S.items[k] || {}).box || 0) / 4, 0) / keys.length) : 0; return `<button class="row" data-act="drill-ch" data-ch="${n}"><span class="num">${n}</span><span>${esc(t)}<small>${keys.length} cards · ${p}% ready</small></span></button>`; }).join("")}</div>`;
+  }
+  function drillChapter(ch) {
+    const all = ALL_KEYS.filter(k => chOf(k) === ch);
+    const due = dueKeys().filter(k => chOf(k) === ch);
+    const seen = new Set(Object.keys(S.items));
+    let keys = [...due.slice(0, 12), ...shuffle(all.filter(k => !seen.has(k))).slice(0, Math.max(0, 12 - due.length))];
+    if (keys.length < 6) keys = shuffle(all).slice(0, 12);
+    startSession(shuffle(keys), `Manual ch ${ch}: ${MANUAL[ch]}`);
   }
   function drill(sec) {
     const due = dueKeys().filter(k => secOf(k) === sec);
@@ -493,6 +507,7 @@
     }
     if (a === "practise") return practiseLesson();
     if (a === "drill") return drill(+b.dataset.sec);
+    if (a === "drill-ch") return drillChapter(+b.dataset.ch);
     if (a === "booklet") return startSession(shuffle([...X_KEYS, ...X_KEYS, ...X_KEYS, ...QUESTIONS.filter(q => q.code === "1H1").map(q => q.id)]).slice(0, 10), "EX308 lookups");
     if (a === "calc-mix") return startSession(shuffle(GEN_KEYS).slice(0, 10), "Calc trainer");
     if (a === "calc-one") return startSession(Array(6).fill("g:" + b.dataset.g), GENERATORS[b.dataset.g].name);
