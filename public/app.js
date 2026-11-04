@@ -200,7 +200,7 @@
         player.playbackRate = S.settings.rate || 1;
         player.onended = go;
         player.onerror = () => { if (id === playId) p.text ? speak(p.text, go) : go(); };
-        player.play().catch(() => { if (id === playId) p.text ? speak(p.text, go) : go(); });
+        player.play().then(noteAudioUsed, () => { if (id === playId) p.text ? speak(p.text, go) : go(); });
       } else if (p.text) speak(p.text, go);
       else go();
     };
@@ -465,7 +465,7 @@
       </article>`;
     offlineStatus().then(o => {
       const st = $("#offline-status"); if (!st) return;
-      st.textContent = !o ? "Not available on this device." : o.saved === o.total ? "All clips saved. The app and Cori work with no signal." : o.saved ? `${o.saved} of ${o.total} clips saved. Tap Save to finish.` : "Not saved yet. Without signal, the phone voice is used.";
+      st.textContent = !o ? "Not available on this device." : o.saved === o.total ? "All saved: the app and its audio work with no signal." : o.saved ? `${o.saved} of ${o.total} clips saved. Tap Save to finish.` : "Not saved yet. Without signal, the phone voice is used.";
     });
   }
 
@@ -519,7 +519,8 @@
       const st = $("#offline-status");
       return saveOffline((d, t) => { if (st) st.textContent = `Saving… ${d} of ${t} clips`; }).then(failed => {
         b.disabled = false;
-        if (st) st.textContent = failed ? `${failed} clips couldn't be saved. Check your connection and tap Save again.` : "All clips saved. The app and Cori work with no signal.";
+        if (st) st.textContent = failed ? `${failed} clips couldn't be saved. Check your connection and tap Save again.` : "All saved: the app and its audio work with no signal.";
+        if (!failed) opSet({ done: true });
       });
     }
     if (a === "test-voice") { S.settings.rate = +$("#st-rate").value; hush(); return speak("Q R T means stop transmitting. Three dB doubles the power."); }
@@ -550,6 +551,59 @@
     }));
   }
   setTimeout(() => cacheShell().catch(() => {}), 3000);
+  /* ── OFFLINE PROMPT ──
+     Asked once per phone, the first time the app opens there. "Skip for now" asks once more,
+     the first time the app opens at least a day after that phone first played any audio.
+     Saving (here or in Settings) stops both. */
+  const OP = "rsgb-offline-prompt";
+  function opGet() { try { return JSON.parse(localStorage.getItem(OP) || "{}"); } catch { return {}; } }
+  function opSet(patch) { try { localStorage.setItem(OP, JSON.stringify({ ...opGet(), ...patch })); } catch {} }
+  function noteAudioUsed() { if (!opGet().firstAudio) opSet({ firstAudio: Date.now() }); }
+  const PROMPTS = {
+    first: { title: "One quick thing before you start",
+      text: "Would you like the whole course, including the spoken lessons and questions, saved on this phone? Then it'll work even with no signal. It takes about 45 MB and a minute on Wi-Fi. You can always do it later in Settings.",
+      no: "Skip for now" },
+    second: { title: "You've recently used the spoken content",
+      text: "Would you like to save it on this phone so it works with no signal, in the car or anywhere? It's about 45 MB and takes a minute on Wi-Fi. You can always do it later in Settings.",
+      no: "No thanks" },
+  };
+  async function maybePromptOffline() {
+    if (!navigator.onLine || !("caches" in window)) return;
+    for (let i = 0; i < 40 && !clips; i++) await new Promise(r => setTimeout(r, 250));
+    if (!clips || document.querySelector(".modal-back")) return;
+    const st = opGet();
+    if (st.done) return;
+    const o = await offlineStatus();
+    if (o && o.saved === o.total) return opSet({ done: true });
+    if (!st.first) showOfflinePrompt("first");
+    else if (!st.second && st.firstAudio && Date.now() - st.firstAudio >= 864e5) showOfflinePrompt("second");
+  }
+  function showOfflinePrompt(kind) {
+    const t = PROMPTS[kind];
+    const back = document.createElement("div");
+    back.className = "modal-back";
+    back.innerHTML = `
+      <div class="card modal" role="dialog" aria-modal="true" aria-labelledby="op-title">
+        <h1 id="op-title">${esc(t.title)}</h1>
+        <p id="op-text">${esc(t.text)}</p>
+        <button class="go" id="op-save">Save everything</button>
+        <button class="go alt" id="op-skip">${esc(t.no)}</button>
+      </div>`;
+    document.body.appendChild(back);
+    const close = () => back.remove();
+    back.querySelector("#op-skip").onclick = () => { opSet({ [kind]: Date.now() }); close(); };
+    back.querySelector("#op-save").onclick = async e => {
+      const btn = e.currentTarget, text = back.querySelector("#op-text");
+      opSet({ [kind]: Date.now() });
+      btn.disabled = true; back.querySelector("#op-skip").hidden = true;
+      const failed = await saveOffline((d, n) => { text.textContent = `Saving… ${d} of ${n} files. Keep the app open until it finishes.`; });
+      if (failed) text.textContent = `${failed} files couldn't be saved. You can finish this later in Settings, ideally on Wi-Fi.`;
+      else { opSet({ done: true }); text.textContent = "All saved: the app and its audio now work with no signal."; }
+      btn.disabled = false; btn.textContent = "Done"; btn.onclick = close;
+    };
+  }
+  setTimeout(() => maybePromptOffline().catch(() => {}), 1500);
+
   // deep link from the reminder: /?start=daily
   if (new URLSearchParams(location.search).get("start") === "daily") { render(); setTimeout(() => app.querySelector('[data-act="daily"]')?.click(), 50); }
   else render();
