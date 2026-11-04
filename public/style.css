@@ -106,3 +106,7 @@ h2 { font: 600 13px var(--mono); text-transform: uppercase; letter-spacing: .08e
 .modal h1 { font-size: 21px; }
 
 .manual { margin: 10px 0 0; font-size: 15px; color: var(--muted); }
+.suggest { text-align: left; margin: 18px 0 6px; padding: 14px; border-radius: 12px; background: var(--panel2); border-left: 4px solid var(--amber); }
+.suggest .tag { margin-bottom: 4px; }
+.sug-title { font: 600 18px var(--sans); text-transform: none; letter-spacing: 0; color: var(--text); margin: 0 0 6px; }
+.suggest p { margin: 0 0 4px; font-size: 15px; color: var(--muted); }

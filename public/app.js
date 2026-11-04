@@ -307,6 +307,9 @@
     // a missed card comes back once at the end of the session
     if (!ok && !ctx.retry.has(it.key)) { ctx.retry.add(it.key); ctx.queue.push(it.key); }
     if (ctx.mock) ctx.mockAns.push({ sec: it.sec, ok });
+    // first attempt at each card this session, for the "what to read next" suggestion
+    ctx.log ||= [];
+    if (!ctx.log.some(e => e.k === it.key)) ctx.log.push({ k: it.key, ok });
     render();
     const ex = app.querySelector(".explain");
     if (ex) ex.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -320,6 +323,7 @@
         <h1>${pct >= 80 ? "Great session" : pct >= 60 ? "Solid work" : "Good effort"}</h1>
         <p class="big-n">${ctx.right}<small>/${ctx.total}</small></p>
         <p>Missed cards will come back soon. Streak: <b>${streak()}</b> day${streak() === 1 ? "" : "s"}.</p>
+        ${suggestionCard(ctx.log)}
         <button class="go" data-go="home">Home</button>
       </article>`;
   }
@@ -419,7 +423,42 @@
     for (const a of ctx.mockAns) { const b = bySec[a.sec] ||= [0, 0]; b[1]++; if (a.ok) b[0]++; }
     const score = ctx.mockAns.filter(a => a.ok).length;
     S.mocks.push({ d: Date.now(), score, bySec }); save();
-    go("mockdone", { score, bySec, answered: ctx.mockAns.length });
+    go("mockdone", { score, bySec, answered: ctx.mockAns.length, log: ctx.log });
+  }
+
+  /* After a session: find the weakest manual chapter and suggest it.
+     Weakest = most cards missed this session (first attempts only);
+     ties go to the chapter that is least ready overall.
+     A clean session suggests the least-ready chapter you've started. */
+  function chapterReady(ch) {
+    const keys = ALL_KEYS.filter(k => chOf(k) === ch);
+    return keys.length ? Math.round(100 * keys.reduce((s, k) => s + Math.min(4, (S.items[k] || {}).box || 0) / 4, 0) / keys.length) : 100;
+  }
+  function weakestChapter(log = []) {
+    const by = {};
+    for (const e of log) { const ch = chOf(e.k); if (!ch) continue; const b = by[ch] ||= { seen: 0, missed: 0 }; b.seen++; if (!e.ok) b.missed++; }
+    const missed = Object.entries(by).filter(([, b]) => b.missed);
+    if (missed.length) {
+      missed.sort(([a, x], [b, y]) => y.missed - x.missed || chapterReady(+a) - chapterReady(+b));
+      const [ch, b] = missed[0];
+      return { ch: +ch, why: `You missed ${b.missed} of ${b.seen} card${b.seen === 1 ? "" : "s"} from this chapter today, and it's ${chapterReady(+ch)}% ready overall.` };
+    }
+    const started = Object.keys(MANUAL).map(Number).filter(ch => ALL_KEYS.some(k => chOf(k) === ch && S.items[k]));
+    if (!started.length) return null;
+    started.sort((a, b) => chapterReady(a) - chapterReady(b));
+    const ch = started[0];
+    return { ch, why: `No misses today, well done. Of the chapters you've started, this is the least ready at ${chapterReady(ch)}%.` };
+  }
+  function suggestionCard(log) {
+    const w = weakestChapter(log);
+    if (!w) return "";
+    return `
+      <div class="suggest">
+        <div class="tag">📖 Suggested reading</div>
+        <h2 class="sug-title">Chapter ${w.ch}: ${esc(MANUAL[w.ch])}</h2>
+        <p>${esc(w.why)}</p>
+        <button class="go alt" data-act="drill-ch" data-ch="${w.ch}">Drill chapter ${w.ch} after reading</button>
+      </div>`;
   }
   function mockdone() {
     const { score, bySec } = ctx;
@@ -429,6 +468,7 @@
         <p class="big-n ${score >= 28 ? "pass" : "fail"}">${score}<small>/46</small></p>
         <p>${score >= 28 ? `That's ${score - 28} above the pass mark.` : `${28 - score} more needed to pass.`}</p>
         <div class="bars">${SECTIONS.map(s => { const b = bySec[s.n] || [0, s.weight]; const p = Math.round(100 * b[0] / (b[1] || 1)); return `<div class="bar"><span class="bl">${s.n}. ${s.short}</span><span class="bt"><span style="width:${p}%" class="${p >= 70 ? "ok" : p >= 50 ? "mid" : ""}"></span></span><span class="bn">${b[0]}/${b[1]}</span></div>`; }).join("")}</div>
+        ${suggestionCard(ctx.log)}
         <button class="go" data-go="home">Home</button>
       </article>`;
   }
