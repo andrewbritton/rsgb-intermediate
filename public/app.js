@@ -88,9 +88,13 @@
 
   function grade(key, ok) {
     const it = S.items[key] || { box: 0, r: 0, w: 0 };
-    if (ok) { it.box = Math.min(5, (it.box || 0) + 1); it.r++; }
-    else { it.box = 1; it.w++; }
-    it.due = addDays(today(), ok ? INTERVALS[it.box] : 0);
+    // Only a card that is due (or brand new) moves up a level. Answering it right early,
+    // e.g. drilling the same chapter twice in a day, is good practice but earns no extra credit.
+    const isDue = !it.due || it.due <= today();
+    if (ok) {
+      it.r++;
+      if (isDue) { it.box = Math.min(5, (it.box || 0) + 1); it.due = addDays(today(), INTERVALS[it.box]); }
+    } else { it.box = 1; it.w++; it.due = today(); }
     it.u = Date.now();
     S.items[key] = it;
     const d = S.days[today()] || { n: 0, c: 0 };
@@ -120,10 +124,26 @@
   }
   const newToday = () => Object.values(S.items).filter(v => v.first === today()).length;
 
+  /* How well a card is known, 0 to 1.
+     Level 4+ = fully known. A card left overdue loses one level of credit for every
+     interval's worth of time it has been ignored (after 2 days' grace), down to level 1.
+     The stored level is untouched: it only drops for real if you then get it wrong. */
+  function cardValue(k) {
+    const it = S.items[k];
+    if (!it || !it.box) return 0;
+    let level = Math.min(4, it.box);
+    if (it.due) {
+      const overdue = Math.round((new Date(today() + "T12:00:00") - new Date(it.due + "T12:00:00")) / 864e5) - 2;
+      if (overdue > 0) level = Math.max(1, level - Math.ceil(overdue / Math.max(3, INTERVALS[Math.min(5, it.box)])));
+    }
+    return level / 4;
+  }
+  const pctOf = keys => keys.length ? Math.round(100 * keys.reduce((s, k) => s + cardValue(k), 0) / keys.length) : 0;
+  // Overall figure is weighted like the real paper (e.g. Technical 14 of 46 marks, Operating 2).
   function readiness(sec) {
-    const keys = ALL_KEYS.filter(k => !sec || secOf(k) === sec);
-    const score = keys.reduce((s, k) => s + Math.min(4, (S.items[k] || {}).box || 0) / 4, 0);
-    return Math.round(100 * score / keys.length);
+    if (sec) return pctOf(ALL_KEYS.filter(k => secOf(k) === sec));
+    const total = SECTIONS.reduce((s, x) => s + x.weight, 0);
+    return Math.round(SECTIONS.reduce((s, x) => s + x.weight * pctOf(ALL_KEYS.filter(k => secOf(k) === x.n)), 0) / total);
   }
   function streak() {
     let n = 0, d = today();
@@ -364,7 +384,7 @@
       <div class="list">${SECTIONS.map(s => `<button class="row" data-act="drill" data-sec="${s.n}"><span class="num">${s.n}</span><span>${esc(s.name)}<small>${s.weight} Qs in the exam · ${readiness(s.n)}% ready</small><small class="blurb">${esc(s.blurb)}</small></span></button>`).join("")}</div>
       <h2>Or follow the manual</h2>
       <p class="intro">Read a chapter of the Intermediate Licence Manual, then drill just its questions.</p>
-      <div class="list">${Object.entries(MANUAL).map(([n, t]) => { const keys = ALL_KEYS.filter(k => chOf(k) === +n); const p = keys.length ? Math.round(100 * keys.reduce((s, k) => s + Math.min(4, (S.items[k] || {}).box || 0) / 4, 0) / keys.length) : 0; return `<button class="row" data-act="drill-ch" data-ch="${n}"><span class="num">${n}</span><span>${esc(t)}<small>${keys.length} cards · ${p}% ready</small></span></button>`; }).join("")}</div>`;
+      <div class="list">${Object.entries(MANUAL).map(([n, t]) => { const keys = ALL_KEYS.filter(k => chOf(k) === +n); const p = pctOf(keys); return `<button class="row" data-act="drill-ch" data-ch="${n}"><span class="num">${n}</span><span>${esc(t)}<small>${keys.length} cards · ${p}% ready</small></span></button>`; }).join("")}</div>`;
   }
   function drillChapter(ch) {
     const all = ALL_KEYS.filter(k => chOf(k) === ch);
@@ -432,7 +452,7 @@
      A clean session suggests the least-ready chapter you've started. */
   function chapterReady(ch) {
     const keys = ALL_KEYS.filter(k => chOf(k) === ch);
-    return keys.length ? Math.round(100 * keys.reduce((s, k) => s + Math.min(4, (S.items[k] || {}).box || 0) / 4, 0) / keys.length) : 100;
+    return keys.length ? pctOf(keys) : 100;
   }
   function weakestChapter(log = []) {
     const by = {};
