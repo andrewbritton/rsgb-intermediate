@@ -262,7 +262,8 @@
           <div><b>${doneToday}</b><span>cards today</span></div>
         </div>
       </section>
-      <button class="go big" data-act="daily"><span>Today's session</span><small>${due} to review · ${fresh} new · about ${Math.max(5, Math.round(Math.min(SESSION_SIZE, due + fresh) * 0.6))} min</small></button>
+      ${due + fresh > 0 ? `<button class="go big" data-act="daily"><span>Today's session</span><small>${due} to review · ${fresh} new · about ${Math.max(5, Math.round(Math.min(SESSION_SIZE, due + fresh) * 0.6))} min</small></button>`
+        : `<button class="go big" data-act="extra"><span>✓ Today's done · Extra round</span><small>${extraHint()} · about 10 min</small></button>`}
       ${mathsDone < mathsTotal ? `<button class="go alt" data-go="lessons" data-track="maths"><span>Maths from scratch</span><small>${mathsDone} of ${mathsTotal} lessons · start here</small></button>` : ""}
       <div class="grid">
         <button class="tile" data-go="lessons" data-track="section"><i>▶</i>Listen & learn<small>90-second explainers</small></button>
@@ -338,14 +339,40 @@
   function done() {
     const pct = ctx.total ? Math.round(100 * ctx.right / ctx.total) : 0;
     app.innerHTML = ctx.empty ? `
-      <article class="card center"><h1>All caught up</h1><p>Nothing is due here right now. Try the calc trainer or a mock exam, or come back tomorrow.</p><button class="go" data-go="home">Home</button></article>` : `
+      <article class="card center"><h1>All caught up</h1><p>Nothing is due here right now. You can do an extra round, or try the calc trainer or a mock exam.</p><button class="go" data-act="extra">Extra round</button><button class="go alt" data-go="home">Home</button></article>` : `
       <article class="card center">
         <h1>${pct >= 80 ? "Great session" : pct >= 60 ? "Solid work" : "Good effort"}</h1>
         <p class="big-n">${ctx.right}<small>/${ctx.total}</small></p>
         <p>Missed cards will come back soon. Streak: <b>${streak()}</b> day${streak() === 1 ? "" : "s"}.</p>
         ${suggestionCard(ctx.log)}
+        ${ctx.mock ? "" : `<button class="go alt" data-act="extra">Another round</button>`}
         <button class="go" data-go="home">Home</button>
       </article>`;
+  }
+
+  /* Extra rounds: for when one session a day isn't enough.
+     Up to 7 brand-new cards (beyond the daily limit) plus the cards you know least well.
+     New cards earn credit as normal; repeats of not-yet-due cards are practice only
+     (see grade()), so extra rounds can't inflate "exam ready". */
+  function weakestSeen(n) {
+    const t = today();
+    return Object.entries(S.items)
+      .filter(([k, v]) => ALL_KEYS.includes(k) && v.box && !(v.due <= t))
+      .sort(([, a], [, b]) => (a.box - b.box) || ((b.w || 0) / ((b.r || 0) + (b.w || 0) || 1) - (a.w || 0) / ((a.r || 0) + (a.w || 0) || 1)))
+      .slice(0, n).map(([k]) => k);
+  }
+  function extraKeys() {
+    const due = dueKeys().slice(0, SESSION_SIZE);
+    const fresh = newKeys(Math.max(0, Math.min(7, SESSION_SIZE - due.length)));
+    const weak = weakestSeen(SESSION_SIZE - due.length - fresh.length);
+    let keys = [...due, ...fresh, ...weak];
+    if (keys.length < SESSION_SIZE) keys = keys.concat(newKeys(SESSION_SIZE - keys.length).filter(k => !keys.includes(k)));
+    return shuffle(keys);
+  }
+  function extraHint() {
+    const left = ALL_KEYS.filter(k => !S.items[k]).length;
+    const weak = weakestSeen(8).length;
+    return left ? `${Math.min(7, left)} new + ${weak ? "your weakest cards" : "more new"}` : "your weakest cards";
   }
 
   function lessons() {
@@ -553,6 +580,7 @@
       const fresh = newKeys(Math.min(Math.max(0, S.settings.newPerDay - newToday()), Math.max(3, SESSION_SIZE - due.length)));
       return startSession(shuffle([...due, ...fresh]), "Today's session");
     }
+    if (a === "extra") return startSession(extraKeys(), "Extra round");
     if (a === "ans") return answer(+b.dataset.i);
     if (a === "next") { ctx.cur = null; if (ctx.mock && !ctx.queue.length) return finishMock(); return render(); }
     if (a === "sayq") { hush(); return say(questionParts(ctx.cur)); }
