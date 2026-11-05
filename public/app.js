@@ -280,7 +280,7 @@
         <div class="tag">${sec.n}. ${esc(sec.name)} · ${esc(it.code)}${it.calc ? " · calc" : ""}${it.booklet ? " · use EX308" : ""}${manualChapter(it.code) ? ` · 📖 Ch ${manualChapter(it.code)}` : ""}</div>
         <p class="q">${esc(it.q)}</p>
         <button class="say" data-act="sayq" aria-label="Read question aloud">🔊</button>
-        <div class="opts">${it.order.map((o, i) => `<button class="opt ${ctx.answered != null ? (o.ok ? "right" : i === ctx.answered ? "wrong" : "dim") : ""}" data-act="ans" data-i="${i}" ${ctx.answered != null ? "disabled" : ""}><b>${"ABCD"[i]}</b>${esc(o.t)}</button>`).join("")}</div>
+        <div class="opts">${it.order.map((o, i) => `<button class="opt ${ctx.answered != null ? (o.ok ? "right" : i === ctx.answered ? "wrong" : "dim") : ""}" data-act="ans" data-i="${i}" ${ctx.answered != null ? "disabled" : ""}><b>${"ABCD"[i]}</b><span class="opt-t">${esc(o.t)}</span>${ctx.answered != null && o.ok ? `<span class="mark ok" aria-label="Correct answer">✓</span>` : ctx.answered === i ? `<span class="mark no" aria-label="Your answer, incorrect">✗</span>` : ""}</button>`).join("")}</div>
         ${ctx.answered != null ? `
           <div class="explain ${it.order[ctx.answered].ok ? "good" : "bad"}">
             <strong>${it.order[ctx.answered].ok ? pickPraise() : "Not quite."}</strong> ${esc(it.x)}

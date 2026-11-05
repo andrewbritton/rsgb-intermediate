@@ -110,3 +110,7 @@ h2 { font: 600 13px var(--mono); text-transform: uppercase; letter-spacing: .08e
 .suggest .tag { margin-bottom: 4px; }
 .sug-title { font: 600 18px var(--sans); text-transform: none; letter-spacing: 0; color: var(--text); margin: 0 0 6px; }
 .suggest p { margin: 0 0 4px; font-size: 15px; color: var(--muted); }
+.opt-t { flex: 1; }
+.mark { flex: none; font: 700 22px/1 var(--sans); margin-left: 8px; align-self: center; }
+.mark.ok { color: var(--green); }
+.mark.no { color: var(--red); }
