@@ -496,17 +496,38 @@
     const ch = started[0];
     return { ch, why: `No misses today, well done. Of the chapters you've started, this is the least ready at ${chapterReady(ch)}%.` };
   }
+  /* Weakest syllabus section in this round: most cards missed (first attempts),
+     ties to the section with the lowest score in the round, then the least ready overall. */
+  function weakestSection(log = []) {
+    const by = {};
+    for (const e of log) { const b = by[secOf(e.k)] ||= { seen: 0, missed: 0, keys: [] }; b.seen++; if (!e.ok) { b.missed++; b.keys.push(e.k); } }
+    const list = Object.entries(by).filter(([, b]) => b.missed)
+      .sort(([a, x], [b, y]) => y.missed - x.missed || (y.missed / y.seen) - (x.missed / x.seen) || readiness(+a) - readiness(+b));
+    if (!list.length) return null;
+    const [sec, b] = list[0];
+    return { sec: +sec, ...b };
+  }
+  const shortQ = k => { const q = QBY[k]; const t = q ? q.q : (k.startsWith("g:") ? GENERATORS[k.slice(2)].name : "EX308 lookup"); return t.length > 70 ? t.slice(0, 67).trimEnd() + "…" : t; };
   function suggestionCard(log) {
-    const w = weakestChapter(log);
-    if (!w) return "";
+    const w = weakestChapter(log), s = weakestSection(log);
+    if (!w && !s) return "";
+    const sec = s && SECTIONS[s.sec - 1];
     return `
-      <div class="suggest">
+      ${s ? `<div class="suggest">
+        <div class="tag">🎯 Drill next</div>
+        <h2 class="sug-title">Section ${s.sec}: ${esc(sec.name)}</h2>
+        <p>Your weakest area this round: ${s.missed} of ${s.seen} missed. These need another look:</p>
+        <ul class="sug-list">${s.keys.slice(0, 3).map(k => `<li>${esc(shortQ(k))}</li>`).join("")}</ul>
+        <button class="go alt" data-act="drill" data-sec="${s.sec}">Drill section ${s.sec}</button>
+      </div>` : ""}
+      ${w ? `<div class="suggest">
         <div class="tag">📖 Suggested reading</div>
         <h2 class="sug-title">Chapter ${w.ch}: ${esc(MANUAL[w.ch])}</h2>
         <p>${esc(w.why)}</p>
         <button class="go alt" data-act="drill-ch" data-ch="${w.ch}">Drill chapter ${w.ch} after reading</button>
-      </div>`;
+      </div>` : ""}`;
   }
+
   function mockdone() {
     const { score, bySec } = ctx;
     app.innerHTML = `
