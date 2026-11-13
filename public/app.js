@@ -264,6 +264,7 @@
       </section>
       ${due + fresh > 0 ? `<button class="go big" data-act="daily"><span>Today's session</span><small>${due} to review · ${fresh} new · about ${Math.max(5, Math.round(Math.min(SESSION_SIZE, due + fresh) * 0.6))} min</small></button>`
         : `<button class="go big" data-act="extra"><span>✓ Today's done · Extra round</span><small>${extraHint()} · about 10 min</small></button>`}
+      ${(() => { const m = manualList(), n = nextManual(); return m.length ? `<button class="go alt" data-go="lessons" data-track="manual"><span>Manual lessons</span><small>${m.filter(l => S.lessons[l.id]).length} of ${m.length} done${n ? ` · next: Ch ${n.ch}, ${esc(n.title)}` : " · all done"}</small></button>` : ""; })()}
       ${mathsDone < mathsTotal ? `<button class="go alt" data-go="lessons" data-track="maths"><span>Maths from scratch</span><small>${mathsDone} of ${mathsTotal} lessons · start here</small></button>` : ""}
       <div class="grid">
         <button class="tile" data-go="lessons" data-track="section"><i>▶</i>Listen & learn<small>90-second explainers</small></button>
@@ -287,6 +288,7 @@
   function session() {
     if (!ctx.cur) {
       const key = ctx.queue.shift();
+      if (!key && ctx.thenLesson) return go("lesson", { id: ctx.thenLesson, warmed: true });
       if (!key) return go("done", ctx);
       const it = build(key);
       it.order = shuffle(it.opts.map((t, i) => ({ t, ok: i === 0, n: i })));
@@ -344,9 +346,9 @@
         <h1>${pct >= 80 ? "Great session" : pct >= 60 ? "Solid work" : "Good effort"}</h1>
         <p class="big-n">${ctx.right}<small>/${ctx.total}</small></p>
         <p>Missed cards will come back soon. Streak: <b>${streak()}</b> day${streak() === 1 ? "" : "s"}.</p>
-        ${suggestionCard(ctx.log)}
-        ${ctx.mock ? "" : `<button class="go alt" data-act="extra">Another round</button>`}
-        <button class="go" data-go="home">Home</button>
+        ${ctx.fromLesson ? (nextManual() ? `<button class="go" data-act="lesson" data-id="${nextManual().id}">Next lesson: ${esc(nextManual().title)}</button>` : "") + `<button class="go alt" data-go="lessons" data-track="manual">All manual lessons</button>`
+          : suggestionCard(ctx.log) + (ctx.mock ? "" : `<button class="go alt" data-act="extra">Another round</button>`)}
+        <button class="go${ctx.fromLesson ? " alt" : ""}" data-go="home">Home</button>
       </article>`;
   }
 
@@ -375,9 +377,23 @@
     return left ? `${Math.min(7, left)} new + ${weak ? "your weakest cards" : "more new"}` : "your weakest cards";
   }
 
+  // Cards that belong to a manual lesson: questions with its syllabus codes, plus any calc or EX308 drills.
+  const lessonCards = l => [...QUESTIONS.filter(q => (l.codes || []).includes(q.code)).map(q => q.id), ...(l.gens || []).map(g => "g:" + g), ...(l.extra || [])];
+  const manualList = () => LESSONS.filter(l => l.track === "manual");
+  const nextManual = () => manualList().find(l => !S.lessons[l.id]);
   function lessons() {
     const track = ctx.track || "section";
     const list = LESSONS.filter(l => l.track === track);
+    if (track === "manual") {
+      let lastCh = 0;
+      app.innerHTML = `
+      <div class="crumb"><button class="link" data-go="home">‹ Home</button><span>Manual lessons</span><span></span></div>
+      <p class="intro">Bite-size lessons in the same order as the Intermediate Licence Manual. Have a guess first, read or listen, then answer the questions straight away. Those cards then come back in your daily sessions.</p>
+      ${list.map(l => { const head = l.ch !== lastCh ? `${lastCh ? "</div>" : ""}<h2>Chapter ${l.ch}: ${esc(MANUAL[l.ch])}</h2><div class="list">` : ""; lastCh = l.ch;
+        return head + `<button class="row" data-act="lesson" data-id="${l.id}"><span class="num">${S.lessons[l.id] ? "✓" : l.id.split("-")[1]}</span><span>${esc(l.title)}<small>${lessonCards(l).length} questions</small></span></button>`; }).join("")}</div>
+      <p class="small">Chapters 4 onwards are on the way.</p>`;
+      return;
+    }
     app.innerHTML = `
       <div class="crumb"><button class="link" data-go="home">‹ Home</button><span>${track === "maths" ? "Maths from scratch" : "Listen & learn"}</span><span></span></div>
       <p class="intro">${track === "maths" ? "Seven short lessons. Each ends with a few practice sums with fresh numbers every time. Do them in order." : "Short explainers for every section, written to be listened to. Tap one, press play, then answer a few questions."}</p>
@@ -389,10 +405,12 @@
     app.innerHTML = `
       <div class="crumb"><button class="link" data-act="back-lessons" data-track="${l.track}">‹ Lessons</button><span></span><span></span></div>
       <article class="card lesson">
+        ${l.ch ? `<div class="tag">📖 Manual chapter ${l.ch}: ${esc(MANUAL[l.ch])}</div>` : ""}
         <h1>${esc(l.title)}</h1>
+        ${l.track === "manual" && !S.lessons[l.id] && !ctx.warmed ? `<div class="suggest warm"><div class="tag">🤔 Warm-up</div><p>Have a guess at one question before you read. Guessing first, even wrongly, makes the lesson stick.</p><button class="go alt" data-act="warmup">Have a guess</button></div>` : ""}
         <button class="go alt" data-act="play">▶ Play aloud</button>
         ${l.body.map((p, i) => `<p data-p="${i}">${esc(p)}</p>`).join("")}
-        <button class="go" data-act="practise">Practise this</button>
+        <button class="go" data-act="practise">${l.track === "manual" ? `Questions on this (${Math.min(5, lessonCards(l).length)})` : "Practise this"}</button>
       </article>`;
   }
 
@@ -400,6 +418,7 @@
     const l = LESSONS.find(x => x.id === ctx.id);
     S.lessons[l.id] = Date.now(); save();
     let keys;
+    if (l.track === "manual") return startSession(shuffle(lessonCards(l)).slice(0, 5), l.title, { fromLesson: l.id });
     if (l.gens) keys = shuffle(l.gens.flatMap(g => ["g:" + g, "g:" + g])).slice(0, 6);
     else keys = shuffle(ALL_KEYS.filter(k => secOf(k) === l.sec && !k.startsWith("g:"))).slice(0, 6);
     startSession(keys, l.title);
@@ -615,6 +634,14 @@
       return next();
     }
     if (a === "practise") return practiseLesson();
+    if (a === "warmup") {
+      const l = LESSONS.find(x => x.id === ctx.id);
+      const cards = lessonCards(l).filter(k => !k.startsWith("g:") && !k.startsWith("x:"));
+      const fresh = cards.filter(k => !S.items[k]);
+      const pick = shuffle(fresh.length ? fresh : cards)[0];
+      // a wrong guess isn't asked again here: the lesson comes first, then the questions
+      return startSession([pick], "Warm-up guess", { thenLesson: l.id, retry: new Set([pick]) });
+    }
     if (a === "drill") return drill(+b.dataset.sec);
     if (a === "drill-ch") return drillChapter(+b.dataset.ch);
     if (a === "booklet") return startSession(shuffle([...X_KEYS, ...X_KEYS, ...X_KEYS, ...QUESTIONS.filter(q => q.code === "1H1").map(q => q.id)]).slice(0, 10), "EX308 lookups");
@@ -666,7 +693,7 @@
   // Keep a copy of the whole app so it opens with no signal. Pages reached through the login
   // redirect aren't stored by the service worker, so the app files are fetched directly here.
   const SHELL = ["/", "/index.html", "/app.js", "/style.css", "/data/sections.js", "/data/questions.js", "/data/generators.js",
-    "/data/lessons.js", "/data/ex308.js", "/manifest.webmanifest", "/icon.svg", "/icon-180.png", "/icon-192.png", "/audio/manifest.json"];
+    "/data/lessons.js", "/data/manual-lessons.js", "/data/ex308.js", "/manifest.webmanifest", "/icon.svg", "/icon-180.png", "/icon-192.png", "/audio/manifest.json"];
   async function cacheShell() {
     if (!("caches" in window) || !navigator.onLine) return;
     const cache = await caches.open("int-trainer-v1");
