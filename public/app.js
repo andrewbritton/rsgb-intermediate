@@ -178,6 +178,7 @@
   const clip = (key, text) => { const c = clips && clips[key]; return c && (text == null || c.h === fnv(String(text))) ? clipUrl(c) : null; };
   // Settings → "Save audio for offline": copies every clip into the cache the service worker plays from.
   const AUDIO_CACHE = "int-audio-v1";
+  const audioMB = () => clips ? Math.max(5, Math.round(Object.keys(clips).length * 0.016)) : 60;
   async function offlineStatus() {
     if (!clips || !("caches" in window)) return null;
     const have = new Set((await (await caches.open(AUDIO_CACHE)).keys()).map(r => r.url));
@@ -595,19 +596,27 @@
     app.innerHTML = `
       <div class="crumb"><button class="link" data-go="home">‹ Home</button><span>Settings</span><span></span></div>
       <article class="card">
+        <h2 class="set-h">Study settings</h2>
         <label class="field">Target exam date<input type="date" id="st-target" value="${S.settings.target}"></label>
         <label class="field">New cards per day<input type="number" min="2" max="30" id="st-new" value="${S.settings.newPerDay}"></label>
         <label class="field">Speech speed<input type="range" min="0.7" max="1.3" step="0.05" id="st-rate" value="${S.settings.rate}"></label>
         <button class="go alt" data-act="test-voice">Test voice</button>
-        <div class="field">Offline audio<span class="small" id="offline-status">Checking…</span></div>
-        <button class="go alt" data-act="save-offline" id="save-offline">Save audio for offline (about 45 MB)</button>
-        <button class="go" data-act="save-settings">Save</button>
+        <button class="go" data-act="save-settings">Save settings</button>
+      </article>
+      <article class="card set-card">
+        <h2 class="set-h">Offline audio</h2>
+        <p class="small" id="offline-status">Checking…</p>
+        <button class="go alt" data-act="save-offline" id="save-offline">Download audio for offline use (about ${audioMB()} MB)</button>
+        <p class="small">Do this on Wi-Fi before a flight or a trip with no signal. If new lessons have been added since, download again to get their audio.</p>
+      </article>
+      <article class="card set-card">
+        <h2 class="set-h">Account</h2>
         <p class="small">Signed in as <b>${esc(USER)}</b>. Progress syncs between your devices. ${Object.keys(S.items).length} of ${ALL_KEYS.length} cards started.</p>
         <button class="go alt" data-act="logout">Log out</button>
       </article>`;
     offlineStatus().then(o => {
       const st = $("#offline-status"); if (!st) return;
-      st.textContent = !o ? "Not available on this device." : o.saved === o.total ? "All saved: the app and its audio work with no signal." : o.saved ? `${o.saved} of ${o.total} clips saved. Tap Save to finish.` : "Not saved yet. Without signal, the phone voice is used.";
+      st.textContent = !o ? "Not available on this device." : o.saved === o.total ? "All saved: the app and its audio work with no signal." : o.saved ? `${o.saved} of ${o.total} clips downloaded. Tap Download to finish.` : "Not saved yet. Without signal, the phone voice is used.";
     });
   }
 
@@ -669,9 +678,9 @@
       if (!clips) return;
       b.disabled = true;
       const st = $("#offline-status");
-      return saveOffline((d, t) => { if (st) st.textContent = `Saving… ${d} of ${t} clips`; }).then(failed => {
+      return saveOffline((d, t) => { if (st) st.textContent = `Downloading… ${d} of ${t} clips`; }).then(failed => {
         b.disabled = false;
-        if (st) st.textContent = failed ? `${failed} clips couldn't be saved. Check your connection and tap Save again.` : "All saved: the app and its audio work with no signal.";
+        if (st) st.textContent = failed ? `${failed} clips couldn't be saved. Check your connection and tap Download again.` : "All saved: the app and its audio work with no signal.";
         if (!failed) opSet({ done: true });
       });
     }
