@@ -346,7 +346,7 @@
         <h1>${pct >= 80 ? "Great session" : pct >= 60 ? "Solid work" : "Good effort"}</h1>
         <p class="big-n">${ctx.right}<small>/${ctx.total}</small></p>
         <p>Missed cards will come back soon. Streak: <b>${streak()}</b> day${streak() === 1 ? "" : "s"}.</p>
-        ${ctx.fromLesson ? (nextManual() ? `<button class="go" data-act="lesson" data-id="${nextManual().id}">Next lesson: ${esc(nextManual().title)}</button>` : "") + `<button class="go alt" data-go="lessons" data-track="manual">All manual lessons</button>`
+        ${ctx.fromLesson ? (nextManual(ctx.fromLesson) ? `<button class="go" data-act="lesson" data-id="${nextManual(ctx.fromLesson).id}">Next lesson: ${esc(nextManual(ctx.fromLesson).title)}</button>` : "") + `<button class="go alt" data-go="lessons" data-track="manual">All manual lessons</button>`
           : suggestionCard(ctx.log) + (ctx.mock ? "" : `<button class="go alt" data-act="extra">Another round</button>`)}
         <button class="go${ctx.fromLesson ? " alt" : ""}" data-go="home">Home</button>
       </article>`;
@@ -378,9 +378,10 @@
   }
 
   // Cards that belong to a manual lesson: questions with its syllabus codes, plus any calc or EX308 drills.
-  const lessonCards = l => [...QUESTIONS.filter(q => (l.codes || []).includes(q.code)).map(q => q.id), ...(l.gens || []).map(g => "g:" + g), ...(l.extra || [])];
+  const lessonCards = l => [...QUESTIONS.filter(q => (l.codes || []).includes(q.code)).map(q => q.id), ...(l.ids || []), ...(l.gens || []).map(g => "g:" + g), ...(l.extra || [])];
   const manualList = () => LESSONS.filter(l => l.track === "manual");
-  const nextManual = () => manualList().find(l => !S.lessons[l.id]);
+  // The next lesson you haven't done, after `fromId` in manual order (wrapping round), or the first undone one.
+  const nextManual = fromId => { const m = manualList(), i = m.findIndex(l => l.id === fromId); return [...m.slice(i + 1), ...m.slice(0, i + 1)].find(l => !S.lessons[l.id]); };
   function lessons() {
     const track = ctx.track || "section";
     const list = LESSONS.filter(l => l.track === track);
@@ -391,7 +392,7 @@
       <p class="intro">Bite-size lessons in the same order as the Intermediate Licence Manual. Have a guess first, read or listen, then answer the questions straight away. Those cards then come back in your daily sessions.</p>
       ${list.map(l => { const head = l.ch !== lastCh ? `${lastCh ? "</div>" : ""}<h2>Chapter ${l.ch}: ${esc(MANUAL[l.ch])}</h2><div class="list">` : ""; lastCh = l.ch;
         return head + `<button class="row" data-act="lesson" data-id="${l.id}"><span class="num">${S.lessons[l.id] ? "✓" : l.id.split("-")[1]}</span><span>${esc(l.title)}<small>${lessonCards(l).length} questions</small></span></button>`; }).join("")}</div>
-      <p class="small">Chapters 4 onwards are on the way.</p>`;
+      <p class="small">Chapters 5 onwards are on the way.</p>`;
       return;
     }
     app.innerHTML = `

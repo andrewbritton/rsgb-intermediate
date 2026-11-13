@@ -133,3 +133,103 @@ window.LESSONS.push(
       "Inside equipment, thin metal screens between stages stop signals coupling where they shouldn't, and cut unwanted radiation."
     ] }
 );
+
+window.LESSONS.push(
+  // ── CHAPTER 4: BASIC ELECTRONICS ──
+  { id: "c4-1", track: "manual", ch: 4, title: "Current, voltage, resistance and power", codes: ["2A1", "2B1"], gens: ["power"],
+    body: [
+      "Current is a flow of electric charge, measured in amps. Voltage, measured in volts, is the push that drives it. Resistance, in ohms, is how strongly something opposes the flow.",
+      "Conductors such as copper let current flow easily. Insulators such as plastic and glass hardly let any through. Resistors sit in between, made to a chosen value.",
+      "Every component is made to a tolerance. A 100 ohm resistor with 5 percent tolerance could measure anywhere from 95 to 105 ohms, and that's perfectly normal.",
+      "Power, in watts, is how fast energy is being used: volts times amps. It can also be worked out as current squared times resistance, or volts squared divided by resistance. All three are on the EX308 formula page."
+    ] },
+  { id: "c4-2", track: "manual", ch: 4, title: "Ohm's law", ids: ["2C1-1", "2C1-5", "2C1-6"], gens: ["ohmsI", "ohmsV"],
+    body: [
+      "Ohm's law ties the three together: voltage equals current times resistance. V equals I R.",
+      "Use the triangle: V on top, I and R underneath. Cover the one you want. Current is V over R; resistance is V over I.",
+      "Convert to plain units first: milliamps to amps, kilohms to ohms. Or use the short cut: volts divided by kilohms gives milliamps.",
+      "With the resistance fixed, current follows voltage. Double the voltage and the current doubles."
+    ] },
+  { id: "c4-3", track: "manual", ch: 4, title: "Resistors in series and parallel", ids: ["2C1-2", "2C1-3", "2C1-4"], gens: ["series", "parallel2", "parallel3"],
+    body: [
+      "In series, one after another, resistances simply add. The same current flows through each.",
+      "In parallel, side by side, the total is always less than the smallest one, because each extra path lets more current through.",
+      "For two in parallel, use product over sum: multiply them, then divide by their total. Two equal resistors in parallel give half of one.",
+      "For three or more, add up one divided by each, then take one divided by the answer. The formula's in your booklet."
+    ] },
+  { id: "c4-4", track: "manual", ch: 4, title: "Potential dividers", codes: ["2C2"], gens: ["divider"],
+    body: [
+      "Two resistors in series across a supply share the voltage between them, in proportion to their values. That's a potential divider.",
+      "The output across the bottom resistor is the supply times the bottom resistor, divided by the total.",
+      "Equal resistors split it equally. If the bottom one is twice the top one, it takes two thirds of the voltage.",
+      "Quick check: the bigger resistor always takes the bigger share."
+    ] },
+  { id: "c4-5", track: "manual", ch: 4, title: "Batteries and internal resistance", codes: ["2C3"], gens: ["internalR"],
+    body: [
+      "Every battery or power supply behaves as if it has a small resistor hidden inside it: its internal resistance.",
+      "With nothing connected, you measure the full voltage, called the EMF. Draw current and some voltage is lost across that hidden resistor, so the terminal voltage sags.",
+      "To find the EMF from two readings: the extra drop divided by the extra current gives the internal resistance. Then add back what's lost at either reading.",
+      "That's why a heavy transmitter load can pull a weak supply's voltage down."
+    ] },
+  { id: "c4-6", track: "manual", ch: 4, title: "Capacitors", codes: ["2D1", "2D2", "2D3"], gens: ["capPar"],
+    body: [
+      "A capacitor is two conducting plates separated by an insulator, the dielectric. It stores energy in the electric field between the plates. Capacitance is measured in farads, though real values are microfarads, nanofarads or picofarads.",
+      "Bigger plates, closer together, and a better dielectric all give more capacitance.",
+      "Capacitors combine the opposite way to resistors. In parallel they add. In series, use product over sum, and the total is less than the smallest.",
+      "Electrolytic capacitors are polarised. Fit one the wrong way round and it can overheat, vent or even burst."
+    ] },
+  { id: "c4-7", track: "manual", ch: 4, title: "Inductors", codes: ["2D4", "2D5", "2D6"], gens: ["indSer"],
+    body: [
+      "Current through a coil creates a magnetic field, and the coil stores energy in it. That's an inductor, measured in henries.",
+      "When a conductor and a magnetic field move relative to each other, a voltage is induced. That's how generators and transformers work.",
+      "More turns, a bigger diameter, closer spacing, or a core of iron or ferrite all increase inductance. Moving a ferrite slug in or out is a neat way to tune a coil.",
+      "Inductors combine like resistors: in series they add, and in parallel the total is smaller."
+    ] },
+  { id: "c4-8", track: "manual", ch: 4, title: "AC: frequency, period and RMS", codes: ["2E2", "2E3"], gens: ["period", "rms"],
+    body: [
+      "Alternating current swings back and forth. Frequency is how many complete cycles happen each second, in hertz. Period is the time for one cycle: one divided by the frequency.",
+      "Kilohertz pairs with milliseconds, megahertz with microseconds. 1 megahertz has a period of 1 microsecond.",
+      "The difference in timing between two waves is their phase, measured in degrees. One whole cycle is 360 degrees.",
+      "RMS is the heating value of AC: the DC voltage that would warm a resistor just as much. For a sine wave it's 0.707 times the peak. Peak-to-peak is twice the peak."
+    ] },
+  { id: "c4-9", track: "manual", ch: 4, title: "Reactance and impedance", codes: ["2E1", "2E4", "2E5", "2E6"],
+    body: [
+      "Capacitors and inductors resist AC in a way that depends on frequency. That's called reactance, and like resistance it's measured in ohms, because it's a ratio of volts to amps.",
+      "A capacitor passes AC but blocks DC. Its reactance falls as frequency rises.",
+      "An inductor does the opposite: it passes DC, and its reactance rises with frequency. That's why a coil can be used as an RF choke.",
+      "Reactance stores energy and gives it back, rather than turning it into heat. Impedance is the overall ratio of voltage to current when resistance and reactance are combined."
+    ] },
+  { id: "c4-10", track: "manual", ch: 4, title: "Wavelength", codes: ["2E7", "2E8"], gens: ["wavelength"],
+    body: [
+      "Radio waves travel at the speed of light, 300 million metres a second. So wavelength in metres is 300 divided by the frequency in megahertz.",
+      "7 megahertz is about 43 metres. 145 megahertz is about 2 metres. A half-wave dipole is half the wavelength long.",
+      "Working backwards: a 10 metre dipole is half of 20 metres, and 300 divided by 20 is 15 megahertz.",
+      "Along a feeder at one instant, the wave repeats every wavelength. A quarter wave along is 90 degrees, so a peak becomes zero. Half a wave along is 180 degrees: the opposite peak."
+    ] },
+  { id: "c4-11", track: "manual", ch: 4, title: "Transformers", codes: ["2G1"], gens: ["turns"],
+    body: [
+      "A transformer is two coils sharing a magnetic field, usually wound on an iron or ferrite core that concentrates the field.",
+      "The voltage ratio equals the turns ratio. Fewer turns on the secondary steps the voltage down; more turns steps it up.",
+      "1000 primary turns, 50 secondary turns, 230 volts in: 230 times 50 over 1000 is 11.5 volts out.",
+      "It only works with a changing current. Steady DC makes no changing field, so nothing is induced."
+    ] },
+  { id: "c4-12", track: "manual", ch: 4, title: "Tuned circuits", codes: ["2H1", "2H2", "2H3", "2H4"],
+    body: [
+      "Put an inductor and a capacitor together and you have a tuned circuit. At one frequency, the resonant frequency, their reactances are equal, and energy swaps back and forth between the capacitor's electric field and the coil's magnetic field.",
+      "A series tuned circuit has minimum impedance at resonance. A parallel one has maximum impedance. Series small, parallel peak.",
+      "More inductance or more capacitance lowers the resonant frequency. Less raises it.",
+      "Q describes how sharp the response is. High Q gives a narrow peak and good selectivity. Low Q gives a broad, flat response."
+    ] },
+  { id: "c4-13", track: "manual", ch: 4, title: "Filters", codes: ["2H5"],
+    body: [
+      "Filters are named after what they let through. A low-pass filter passes frequencies below its cut-off. A high-pass filter passes those above.",
+      "A band-pass filter passes one range of frequencies and rejects those either side. A band-stop, or notch, filter does the opposite: it cuts out one narrow band.",
+      "You'll meet these again. A low-pass filter after a transmitter removes harmonics. A high-pass filter on a TV aerial keeps HF signals out."
+    ] },
+  { id: "c4-14", track: "manual", ch: 4, title: "Sampling: analogue into digital", codes: ["2F1"],
+    body: [
+      "To process a signal digitally, it's measured, or sampled, many times a second, and each sample is stored as a number.",
+      "To capture a signal properly, you must sample at more than twice its highest frequency. That minimum is the Nyquist rate. A 3 kilohertz audio signal needs more than 6 kilohertz sampling.",
+      "More bits per sample means finer steps in level. A higher sampling rate means finer steps in time. Both make the copy more accurate; the error left over is a form of distortion."
+    ] }
+);

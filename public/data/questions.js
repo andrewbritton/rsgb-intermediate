@@ -270,3 +270,22 @@ Q("8A8", "A 12 V car battery is dangerous mainly because it can", ["deliver very
 Q("8B3", "Safety glasses are most important when", ["drilling, cutting or soldering", "reading a meter", "tuning a receiver", "plugging in a mains lead"], "Flying swarf, wire offcuts and solder splashes are the eye hazards.");
 Q("9C1", "A gold fourth band on a resistor means", ["±5% tolerance", "±10% tolerance", "×10 multiplier", "a 1 W power rating"], "Gold is ±5%, silver ±10%.");
 Q("9E1", "A good soldered joint looks", ["bright and smooth, with solder flowed onto both parts", "dull and grainy", "like a ball of solder sitting on top", "blackened with burnt flux"], "A dull, grainy or balled joint is usually a 'dry' joint from too little heat or dirty surfaces.");
+
+/* ───────────── Added Nov 2026 for the manual lessons (chapter 4) ───────────── */
+Q("2A1", "Electric current is a flow of", ["electric charge", "voltage", "resistance", "magnetic field"], "Current is the rate of flow of charge, measured in amperes. Voltage is the push that drives it.");
+Q("2A1", "Which of these is a good insulator?", ["Plastic", "Copper", "Aluminium", "Brass"], "Metals conduct well. Plastic, glass and ceramic are insulators.");
+Q("2B1", "The unit of power is the", ["watt", "volt", "ohm", "ampere"], "Power is measured in watts: the rate at which energy is used.");
+Q("2B1", "Besides V × I, power can be calculated as", ["I² × R", "V × R", "I ÷ R", "R ÷ V"], "P = V × I = I² × R = V² ÷ R. They're all on the EX308 formula page.");
+Q("2C1", "If the voltage across a resistor doubles, the current", ["doubles", "halves", "stays the same", "quadruples"], "I = V ÷ R. With R fixed, current is proportional to voltage.");
+Q("2D3", "Which type of capacitor is polarised?", ["Electrolytic", "Ceramic", "Polystyrene", "Air-spaced variable"], "Electrolytics must go the right way round. Ceramic, film and air-spaced types can go either way.");
+Q("2E1", "An inductor will", ["pass DC but oppose AC", "block DC but pass AC", "block both AC and DC", "store charge between two plates"], "A coil opposes changes in current, so it opposes AC but lets steady DC through. Capacitors do the opposite.");
+Q("2E3", "A sine wave of 10 V peak has a peak-to-peak value of", ["20 V", "10 V", "14.1 V", "7.07 V"], "Peak-to-peak runs from the positive peak to the negative peak: twice the peak.");
+Q("2E6", "Impedance is measured in", ["ohms", "henries", "farads", "watts"], "Impedance, like resistance and reactance, is a ratio of volts to amps, so it's in ohms.");
+Q("2E8", "Along a matched feeder at one instant, half a wavelength on from a positive voltage peak you find", ["the negative peak", "zero volts", "the same positive peak", "no signal at all"], "Half a wavelength is 180°, so the voltage is at the opposite peak. A quarter wave (90°) on, it's at zero.");
+Q("2F1", "A signal whose highest frequency is 3 kHz must be sampled at more than", ["6 kHz", "3 kHz", "1.5 kHz", "30 kHz"], "At least twice the highest frequency: the Nyquist rate.");
+Q("2G1", "A transformer with more turns on its secondary than its primary", ["steps the voltage up", "steps the voltage down", "turns AC into DC", "blocks AC"], "Voltage follows the turns ratio: more secondary turns, more output voltage.");
+Q("2H1", "At resonance, the reactances of the inductor and the capacitor are", ["equal", "both zero", "both infinite", "in the ratio 2 to 1"], "Resonance is the frequency where XL = XC.");
+Q("2H3", "To raise the resonant frequency of a tuned circuit you could", ["reduce the capacitance", "add more turns to the coil", "increase the capacitance", "add a ferrite core to the coil"], "Less L or less C gives a higher resonant frequency. Extra turns and a ferrite core both increase L.");
+Q("2H4", "A low-Q tuned circuit gives", ["a broad response with poor selectivity", "a very sharp peak", "a higher resonant frequency", "more gain"], "Low Q means a wide, flat response: it doesn't pick out one frequency well.");
+Q("2H5", "A filter that passes a range of frequencies and rejects those either side is a", ["band-pass filter", "band-stop filter", "low-pass filter", "high-pass filter"], "Band-pass lets a band through. Band-stop (a notch) blocks one.");
+Q("2H5", "A high-pass filter", ["passes frequencies above its cut-off", "passes frequencies below its cut-off", "passes only one frequency", "blocks all RF"], "Filters are named after what they let through.");
